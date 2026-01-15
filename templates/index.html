@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Buddy AI - Your Smart Learning Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Auth Section -->
+    <div id="auth-section" class="login-overlay">
+        <!-- Login Box -->
+        <div id="login-box" class="login-box">
+            <div class="logo">
+                <div class="vm-brand">VM</div>
+                <h1>StudyBuddy<span>AI</span></h1>
+            </div>
+            <h2>Welcome Back!</h2>
+            <p>Please login to continue your session</p>
+            <div class="input-group">
+                <input type="text" id="login-username" placeholder="Username">
+                <input type="password" id="login-password" placeholder="Password">
+                <button class="primary-btn" onclick="handleLogin()">Login</button>
+            </div>
+            <p class="auth-toggle">Don't have an account? <a href="#" onclick="toggleAuth('signup')">Sign Up</a></p>
+        </div>
+
+        <!-- Signup Box -->
+        <div id="signup-box" class="login-box hidden">
+            <div class="logo">
+                <div class="vm-brand">VM</div>
+                <h1>StudyBuddy<span>AI</span></h1>
+            </div>
+            <h2>Create Account</h2>
+            <p>Join StudyBuddy AI and start learning</p>
+            <div class="input-group">
+                <input type="text" id="signup-username" placeholder="Choose a Username">
+                <input type="password" id="signup-password" placeholder="Create a Password">
+                <input type="password" id="signup-confirm-password" placeholder="Confirm Password">
+                <button class="primary-btn" onclick="handleSignup()">Sign Up</button>
+            </div>
+            <p class="auth-toggle">Already have an account? <a href="#" onclick="toggleAuth('login')">Login</a></p>
+        </div>
+    </div>
+
+    <!-- Main App Container (Hidden until login) -->
+    <div id="main-app" class="container hidden">
+        <header>
+            <div class="user-profile">
+                <span id="display-username"></span>
+                <button class="logout-btn" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <div class="logo">
+                <div class="vm-brand">VM</div>
+                <h1>StudyBuddy<span>AI</span></h1>
+            </div>
+            <p class="tagline">Unlock your potential with AI-driven learning</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="explain" style="--accent: var(--accent-orange)">
+                <i class="fas fa-bolt"></i> Explain
+            </button>
+            <button class="tab-btn" data-tab="summarize" style="--accent: var(--accent-emerald)">
+                <i class="fas fa-feather-alt"></i> Summarizer
+            </button>
+            <button class="tab-btn" data-tab="quiz" style="--accent: var(--accent-pink)">
+                <i class="fas fa-fire"></i> Quiz
+            </button>
+            <button class="tab-btn" data-tab="flashcards" style="--accent: var(--accent-blue)">
+                <i class="fas fa-layer-group"></i> Flashcards
+            </button>
+            <button class="tab-btn" data-tab="history" style="--accent: #8b5cf6">
+                <i class="fas fa-history"></i> History
+            </button>
+        </nav>
+
+        <main class="content-area">
+            <!-- History Section -->
+            <section id="history" class="tab-content">
+                <div class="history-header">
+                    <h2>Your Learning History</h2>
+                    <button class="icon-btn" onclick="loadHistory()" title="Refresh"><i
+                            class="fas fa-sync-alt"></i></button>
+                </div>
+                <div id="history-list" class="history-container">
+                    <!-- History items will be injected here -->
+                    <p class="placeholder-text">Select the History tab to see your past activities.</p>
+                </div>
+            </section>
+            <!-- Explain Topic Section -->
+            <section id="explain" class="tab-content active">
+                <div class="input-group">
+                    <label for="explain-subject">Subject</label>
+                    <input type="text" id="explain-subject" placeholder="e.g., Physics, History, Biology">
+
+                    <label for="explain-topic">Which topic do you want to understand?</label>
+                    <input type="text" id="explain-topic" placeholder="e.g., Quantum Entanglement, French Revolution">
+
+                    <label for="explain-level">Learning Level</label>
+                    <select id="explain-level">
+                        <option value="Elementary (Grade 1-5)">Elementary (Simple & Fun)</option>
+                        <option value="Middle School (Grade 6-8)">Middle School (Basic Concepts)</option>
+                        <option value="High School (Grade 9-12)" selected>High School (Detailed)</option>
+                        <option value="University/Professional">University (In-depth & Technical)</option>
+                    </select>
+
+                    <button class="primary-btn" onclick="handleExplain()">Explain it to me!</button>
+                </div>
+            </section>
+
+            <!-- Summarizer Section -->
+            <section id="summarize" class="tab-content">
+                <div class="input-group">
+                    <label for="summarize-text">Paste your long notes here</label>
+                    <textarea id="summarize-text" rows="8"
+                        placeholder="Paste the text you want to summarize..."></textarea>
+
+                    <button class="primary-btn" onclick="handleSummarize()">Summarize Now</button>
+                </div>
+            </section>
+
+            <!-- Quiz Section -->
+            <section id="quiz" class="tab-content">
+                <div class="input-group">
+                    <label for="quiz-topic">Quiz Topic</label>
+                    <input type="text" id="quiz-topic" placeholder="e.g., Photosynthesis">
+
+                    <label for="quiz-count">Number of Questions</label>
+                    <select id="quiz-count">
+                        <option value="3">3 Questions</option>
+                        <option value="5" selected>5 Questions</option>
+                        <option value="10">10 Questions</option>
+                    </select>
+
+                    <button class="primary-btn" onclick="handleQuiz()">Generate Quiz</button>
+                </div>
+            </section>
+
+            <!-- Flashcards Section -->
+            <section id="flashcards" class="tab-content">
+                <div class="input-group">
+                    <label for="flashcard-topic">Flashcard Topic</label>
+                    <input type="text" id="flashcard-topic" placeholder="e.g., Periodic Table">
+
+                    <button class="primary-btn" onclick="handleFlashcards()">Build Flashcards</button>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <div id="loading" class="loading-spinner hidden">
+                <div class="spinner"></div>
+                <p>Asking StudyBuddy AI...</p>
+            </div>
+
+            <div id="result-container" class="result-container hidden">
+                <div class="result-header">
+                    <h3>Result</h3>
+                    <button class="icon-btn" onclick="copyResult()"><i class="fas fa-copy"></i></button>
+                </div>
+                <div id="result-content" class="result-content">
+                    <!-- Result will be injected here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 StudyBuddy AI • Vikash Mishra</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
