@@ -7,4 +7,4 @@ env_variables:
   # or set them via command line during deployment.
   # For simplicity in this demo, you can replace the placeholder below,
   # BUT DO NOT COMMIT REAL KEYS TO PUBLIC REPOS.
-  GEMINI_API_KEY: "AIzaSyDpKERAbNqNymCtPynmA9JvLQYV018fl50"
+  GEMINI_API_KEY: "AIzaSyBYQFPJfKSO_t7rzv4S17Jf-URlMUpRYcA"
