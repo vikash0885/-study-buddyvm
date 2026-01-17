@@ -35,7 +35,7 @@ def add_history(username, activity_type, input_text, result):
 # Configure Gemini API
 API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-3-flash-preview')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 
 # Simple User Storage (JSON file)
