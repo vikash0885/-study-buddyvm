@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import datetime
-import google.generativeai as genai
+from groq import Groq
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +12,10 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# Configure Groq API
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY"),
+)
 
 # Helper to save history
 def add_history(username, activity_type, input_text, result):
@@ -32,15 +36,8 @@ def add_history(username, activity_type, input_text, result):
         users[username]['history'] = users[username]['history'][:20]
         save_users(users)
 
-# Configure Gemini API
-API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash')
-
-
 # Simple User Storage (JSON file)
 USERS_FILE = 'users.json'
-# For Vercel/Serverless: Use /tmp if main dir is read-only
 if os.access('.', os.W_OK) is False:
     USERS_FILE = '/tmp/users.json'
 
@@ -58,8 +55,20 @@ def save_users(users):
         with open(USERS_FILE, 'w') as f:
             json.dump(users, f, indent=4)
     except OSError:
-        # Fallback for read-only systems if /tmp check failed logic
         pass
+
+def get_groq_response(prompt, json_mode=False):
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model="llama-3.3-70b-versatile",
+        response_format={"type": "json_object"} if json_mode else None,
+    )
+    return chat_completion.choices[0].message.content
 
 @app.route('/')
 def index():
@@ -111,7 +120,6 @@ def explain_topic():
         return jsonify({"error": "Subject and topic are required"}), 400
     
     prompt = f"""You are an AI Study Assistant.
-
 Input:
 - Subject: {subject}
 - Topic: {topic}
@@ -119,28 +127,16 @@ Input:
 
 Task:
 1. Explain the topic in a way suitable for the selected learning level.
-2. Include examples appropriate for the subject:
-   - For Science: simple analogies and experiments
-   - For History: events, dates, and cause-effect
-   - For Programming: code snippets, outputs, and logic
+2. Include examples appropriate for the subject.
 3. Summarize key points in bullet format.
-4. Optionally generate:
-   - 3 Quiz questions (MCQs) with answers at the bottom
-   - 3 Flashcard style key-value pairs
-5. Output should be clear, readable, and structured with headings, bullet points, and proper spacing.
-
-Rules:
-- Always tailor explanations to the selected learning level.
-- Use simple language for school, technical depth for college, short points for competitive.
-- Include programming examples when subject is Programming, C++, Python, or Data Structures.
+4. Output should be clear, readable, and structured with markdown headings and bullet points.
 """
     
     try:
-        response = model.generate_content(prompt)
-        # Save to history
+        response_text = get_groq_response(prompt)
         username = data.get('username')
-        add_history(username, 'explain', f"{topic} ({level})", response.text)
-        return jsonify({"explanation": response.text})
+        add_history(username, 'explain', f"{topic} ({level})", response_text)
+        return jsonify({"explanation": response_text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -155,11 +151,10 @@ def summarize_notes():
     prompt = f"Summarize the following study notes into short, easy-to-understand bullet points:\n\n{notes}"
     
     try:
-        response = model.generate_content(prompt)
-        # Save to history
+        response_text = get_groq_response(prompt)
         username = data.get('username')
-        add_history(username, 'summarize', notes[:50] + "...", response.text)
-        return jsonify({"summary": response.text})
+        add_history(username, 'summarize', notes[:50] + "...", response_text)
+        return jsonify({"summary": response_text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -172,21 +167,18 @@ def generate_quiz():
     if not topic:
         return jsonify({"error": "Topic is required"}), 400
     
-    prompt = f"Generate a multiple-choice quiz with {count} questions on the topic '{topic}'. Provide the output in valid JSON format only, following this structure: [{{'question': '...', 'options': ['A', 'B', 'C', 'D'], 'answer': '...'}}]. Do not include any markdown formatting or extra text outside the JSON."
+    prompt = f"Generate a multiple-choice quiz with {count} questions on the topic '{topic}'. Provide the output in valid JSON format only, following this structure: {{\"quiz\": [{{'question': '...', 'options': ['A', 'B', 'C', 'D'], 'answer': '...'}}]}}. Do not include any markdown formatting or extra text outside the JSON."
     
     try:
-        response = model.generate_content(prompt)
-        # Clean response text in case AI adds markdown code blocks
-        content = response.text.replace('```json', '').replace('```', '').strip()
-        quiz_data = json.loads(content)
+        response_text = get_groq_response(prompt, json_mode=True)
+        quiz_data = json.loads(response_text).get('quiz', [])
         
-        # Save to history
         username = data.get('username')
         add_history(username, 'quiz', topic, quiz_data)
         
         return jsonify({"quiz": quiz_data})
     except Exception as e:
-        return jsonify({"error": "Failed to generate quiz JSON. Error: " + str(e)}), 500
+        return jsonify({"error": "Failed to generate quiz. " + str(e)}), 500
 
 @app.route('/api/flashcards', methods=['POST'])
 def generate_flashcards():
@@ -196,20 +188,18 @@ def generate_flashcards():
     if not topic:
         return jsonify({"error": "Topic is required"}), 400
     
-    prompt = f"Generate 5 question-answer flashcards for the topic '{topic}'. Provide the output in valid JSON format only, following this structure: [{{'question': '...', 'answer': '...'}}]. Do not include any markdown formatting or extra text outside the JSON."
+    prompt = f"Generate 5 question-answer flashcards for the topic '{topic}'. Provide the output in valid JSON format only, following this structure: {{\"flashcards\": [{{'question': '...', 'answer': '...'}}]}}. Do not include any markdown formatting or extra text outside the JSON."
     
     try:
-        response = model.generate_content(prompt)
-        content = response.text.replace('```json', '').replace('```', '').strip()
-        flashcards = json.loads(content)
+        response_text = get_groq_response(prompt, json_mode=True)
+        flashcards = json.loads(response_text).get('flashcards', [])
         
-        # Save to history
         username = data.get('username')
         add_history(username, 'flashcards', topic, flashcards)
         
         return jsonify({"flashcards": flashcards})
     except Exception as e:
-        return jsonify({"error": "Failed to generate flashcards JSON. Error: " + str(e)}), 500
+        return jsonify({"error": "Failed to generate flashcards. " + str(e)}), 500
 
 @app.route('/api/history', methods=['POST'])
 def get_user_history():
