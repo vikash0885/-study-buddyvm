@@ -15,13 +15,7 @@ StudyBuddy AI is a powerful, AI-driven learning assistant built with Python and 
 - **Backend**: Python (Flask)
 - **Frontend**: HTML5, CSS3, JavaScript
 - **AI Engine**: Google Gemini Pro (1.5 Flash)
-- **Configuration**: Dotenv for secure environment variables
-
-## 📋 Prerequisites
-
-- Python 3.8 or higher
-- A Google Gemini API Key (Get one from [Google AI Studio](https://aistudio.google.com/))
-
+- **Configuration**: Dotenv for secure environment
 ## ⚙️ Installation & Setup
 
 1. **Clone the project** or navigate to the project directory.
@@ -33,11 +27,6 @@ StudyBuddy AI is a powerful, AI-driven learning assistant built with Python and 
 
 3. **Configure Environment Variables**:
    - Create a `.env` file in the root directory (one has been provided as a template).
-   - Add your Gemini API Key:
-     ```env
-     GEMINI_API_KEY=your_actual_api_key_here
-     ```
-
 4. **Run the Application**:
    ```bash
    python app.py
@@ -67,4 +56,4 @@ AI-Study-Buddy/
 - Ensure you do not commit your `.env` file to public repositories (like GitHub).
 
 ---
-Developed with ❤️ by **Antigravity AI**
+Developed with ❤️ by **Vikash Mishra**
