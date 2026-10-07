@@ -12,10 +12,11 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Configure Groq API
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY"),
-)
+def get_groq_client():
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is not set in Vercel Environment Variables. Please add it.")
+    return Groq(api_key=api_key)
 
 # Helper to save history
 def add_history(username, activity_type, input_text, result):
@@ -58,6 +59,7 @@ def save_users(users):
         pass
 
 def get_groq_response(prompt, json_mode=False):
+    client = get_groq_client()
     chat_completion = client.chat.completions.create(
         messages=[
             {
@@ -216,3 +218,4 @@ def get_user_history():
 
 if __name__ == '__main__':
     app.run(debug=True, port=int(os.getenv("PORT", 5000)))
+
