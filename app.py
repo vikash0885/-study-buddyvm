@@ -60,17 +60,25 @@ def save_users(users):
 
 def get_groq_response(prompt, json_mode=False):
     client = get_groq_client()
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-        model="llama3-8b-8192",
-        response_format={"type": "json_object"} if json_mode else None,
-    )
-    return chat_completion.choices[0].message.content
+    models = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "gemma2-9b-it"]
+    last_error = None
+    for model_name in models:
+        try:
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+                model=model_name,
+                response_format={"type": "json_object"} if json_mode else None,
+            )
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            last_error = e
+            continue
+    raise last_error
 
 @app.route('/')
 def index():
