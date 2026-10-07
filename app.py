@@ -67,7 +67,7 @@ def get_groq_response(prompt, json_mode=False):
                 "content": prompt,
             }
         ],
-        model="llama-3.1-70b-versatile",
+        model="llama3-8b-8192",
         response_format={"type": "json_object"} if json_mode else None,
     )
     return chat_completion.choices[0].message.content
